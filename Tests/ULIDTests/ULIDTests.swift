@@ -298,6 +298,20 @@ struct ULIDTests {
     #expect(ulid == ulid2)
   }
 
+  @Test("Date-only initialization sorts chronologically")
+  func dateOnlyInitializationSorting() async throws {
+    let earlier = ULID(date: Date(timeIntervalSince1970: 1_000_000))
+    try await Task.sleep(for: .milliseconds(2))
+    let later = ULID(date: Date(timeIntervalSince1970: 2_000_000))
+
+    #expect(earlier < later)
+    #expect(earlier.ulidString < later.ulidString)
+
+    // Sorting an out-of-order array should produce chronological order
+    let sorted = [later, earlier].sorted()
+    #expect(sorted == [earlier, later])
+  }
+
   @Test("All ones in random component")
   func allOnesInRandomComponent() {
     // Maximum randomness with zero timestamp
