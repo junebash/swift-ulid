@@ -111,4 +111,40 @@ let benchmarks: @Sendable () -> Void = {
       blackHole(ulid.date)
     }
   }
+
+  // MARK: - JSON Encoding
+
+  Benchmark("ULID — JSON encoding") { benchmark in
+    let ulid = ULID(upper: 0x0001_8AFF_1234_5678, lower: 0xABCD_EF01_2345_6789)
+    let encoder = JSONEncoder()
+    for _ in benchmark.scaledIterations {
+      blackHole(try encoder.encode(ulid))
+    }
+  }
+
+  Benchmark("UUID — JSON encoding") { benchmark in
+    let uuid = UUID(uuidString: "E621E1F8-C36C-495A-93FC-0C247A3E6E5F") ?? UUID()
+    let encoder = JSONEncoder()
+    for _ in benchmark.scaledIterations {
+      blackHole(try encoder.encode(uuid))
+    }
+  }
+
+  // MARK: - JSON Decoding
+
+  Benchmark("ULID — JSON decoding") { benchmark in
+    let data = Data("\"\("01ARZ3NDEKTSV4RRFFQ69G5FAV")\"".utf8)
+    let decoder = JSONDecoder()
+    for _ in benchmark.scaledIterations {
+      blackHole(try decoder.decode(ULID.self, from: data))
+    }
+  }
+
+  Benchmark("UUID — JSON decoding") { benchmark in
+    let data = Data("\"E621E1F8-C36C-495A-93FC-0C247A3E6E5F\"".utf8)
+    let decoder = JSONDecoder()
+    for _ in benchmark.scaledIterations {
+      blackHole(try decoder.decode(UUID.self, from: data))
+    }
+  }
 }
