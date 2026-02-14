@@ -174,6 +174,27 @@ extension ULID: Comparable {
   }
 }
 
+// MARK: - Codable
+
+extension ULID: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let string = try container.decode(String.self)
+    guard let ulid = ULID(string) else {
+      throw DecodingError.dataCorruptedError(
+        in: container,
+        debugDescription: "Invalid ULID string: \(string)"
+      )
+    }
+    self = ulid
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(ulidString)
+  }
+}
+
 // MARK: - CustomStringConvertible
 
 extension ULID: CustomStringConvertible {

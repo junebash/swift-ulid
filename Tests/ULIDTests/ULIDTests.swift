@@ -193,6 +193,30 @@ struct ULIDTests {
     #expect(description.count == 26)
   }
 
+  @Test("Codable round-trip")
+  func codableRoundTrip() throws {
+    let ulid = ULID()
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+
+    let data = try encoder.encode(ulid)
+    let decoded = try decoder.decode(ULID.self, from: data)
+
+    #expect(decoded == ulid)
+
+    // Should encode as an uppercase string
+    let json = try #require(String(data: data, encoding: .utf8))
+    #expect(json == "\"\(ulid.ulidString)\"")
+  }
+
+  @Test("Decoding invalid ULID string throws")
+  func decodingInvalidString() {
+    let json = Data("\"NOT_A_VALID_ULID\"".utf8)
+    #expect(throws: DecodingError.self) {
+      try JSONDecoder().decode(ULID.self, from: json)
+    }
+  }
+
   @Test("Known value round-trip")
   func knownValueRoundTrip() {
     // Test with a known valid ULID string
