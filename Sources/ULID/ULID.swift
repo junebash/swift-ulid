@@ -136,15 +136,12 @@ public struct ULID: Hashable, Sendable {
 
     // Each character is 5 bits. 26 chars * 5 bits = 130 bits, but the top 2
     // bits are always 0 for valid ULIDs.
-    var bytes = [UInt8](repeating: 0, count: 26)
-    var remaining = value
-    for i in stride(from: 25, through: 0, by: -1) {
-      bytes[i] = Self.encodingAlphabet[Int(remaining & 0x1F)]
-      remaining >>= 5
-    }
-
     return String(unsafeUninitializedCapacity: 26) { buffer in
-      _ = buffer.initialize(from: bytes)
+      var remaining = value
+      for i in stride(from: 25, through: 0, by: -1) {
+        buffer.initializeElement(at: i, to: Self.encodingAlphabet[Int(remaining & 0x1F)])
+        remaining >>= 5
+      }
       return 26
     }
   }
