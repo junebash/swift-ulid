@@ -95,9 +95,27 @@ This implementation follows the [ULID specification](https://github.com/ulid/spe
 
 ## Performance
 
-- **Size**: Exactly 16 bytes (2 × UInt64)
-- **Encoding/Decoding**: Optimized Base32 implementation with overflow detection
+- **Size**: Exactly 16 bytes (2 × UInt64), zero heap allocations for creation
+- **Encoding/Decoding**: Optimized Base32 with direct buffer writes, no intermediate allocations
 - **Sorting**: O(1) comparison using native integer comparison
+
+Benchmarked against Foundation.UUID on Apple Silicon (median wall clock time):
+
+| Operation | ULID | UUID | Notes |
+|---|---|---|---|
+| Random generation | 834 ns | 1,042 ns | ULID ~20% faster |
+| String parsing | 875 ns | 1,791 ns | ULID ~2x faster |
+| String serialization | 1,583 ns | 1,916 ns | ULID ~17% faster |
+| Deterministic creation | 750 ns | 709 ns | Comparable; ULID does more work (timestamp + RNG) |
+| Comparison | 708 ns | — | UUID is not `Comparable` |
+| Timestamp extraction | 708 ns | — | Unique to ULID |
+| UUID conversion | 709 ns | — | Unique to ULID |
+
+Run benchmarks yourself with:
+
+```bash
+swift package benchmark
+```
 
 ## Testing
 
