@@ -77,10 +77,12 @@ public struct ULID: Hashable, Sendable {
     self.lower = randomLo
   }
 
-  /// Creates a ULID with the current date and system random number generator.
-  public init() {
+  /// Creates a ULID with the specified date and system random number generator.
+  ///
+  /// - Parameter date: The timestamp to use for this ULID. Defaults to the current date.
+  public init(date: Date = .now) {
     var rng = SystemRandomNumberGenerator()
-    self.init(date: .now, rng: &rng)
+    self.init(date: date, rng: &rng)
   }
 
   /// Creates a ULID from its raw 128-bit representation.
