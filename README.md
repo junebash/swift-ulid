@@ -32,7 +32,7 @@ dependencies: [
 ### Basic Usage
 
 ```swift
-import swift_ulid
+import ULID
 
 // Generate a new ULID
 let ulid = ULID()
