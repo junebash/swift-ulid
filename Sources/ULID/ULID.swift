@@ -68,8 +68,8 @@ public struct ULID: Hashable, Sendable {
       timestamp = UInt64(timeInterval)
     }
 
-    let randomHi = UInt64.random(in: .min ... .max, using: &rng)
-    let randomLo = UInt64.random(in: .min ... .max, using: &rng)
+    let randomHi = rng.next()
+    let randomLo = rng.next()
 
     // upper = [48-bit timestamp][16-bit random]
     // lower = [64-bit random]
