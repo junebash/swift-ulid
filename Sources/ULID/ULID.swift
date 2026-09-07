@@ -13,16 +13,12 @@ import Foundation
 /// - 48-bit timestamp (milliseconds since Unix epoch)
 /// - 80-bit cryptographically secure random component
 public struct ULID: Hashable, Sendable {
-  // Storage: Two UInt64 values representing 128 bits
-  // upper: 48-bit timestamp in high bits + 16 bits of randomness in low bits
-  // lower: remaining 64 bits of randomness
-  private let upper: UInt64
-  private let lower: UInt64
+  private let rawValue: UInt128
 
   // MARK: - Constants
 
   /// Maximum valid timestamp (2^48 - 1)
-  private static let maxTimestamp: UInt64 = 0x0000_FFFF_FFFF_FFFF
+  private static var maxTimestamp: UInt64 { 0x0000_FFFF_FFFF_FFFF }
   private static let maxTimeInterval = TimeInterval(maxTimestamp)
 
   public static let maxDate = Date(timeIntervalSince1970: TimeInterval(maxTimestamp) * 0.001)
@@ -71,10 +67,10 @@ public struct ULID: Hashable, Sendable {
     let randomHi = rng.next()
     let randomLo = rng.next()
 
-    // upper = [48-bit timestamp][16-bit random]
-    // lower = [64-bit random]
-    self.upper = (timestamp << 16) | (randomHi & 0xFFFF)
-    self.lower = randomLo
+    self.rawValue =
+      (UInt128(timestamp) << 80)
+      | (UInt128(randomHi & 0xFFFF) << 64)
+      | UInt128(randomLo)
   }
 
   /// Creates a ULID with the specified date and system random number generator.
@@ -91,8 +87,7 @@ public struct ULID: Hashable, Sendable {
   ///   - upper: The upper 64 bits (timestamp + first 16 bits of randomness).
   ///   - lower: The lower 64 bits (remaining randomness).
   public init(upper: UInt64, lower: UInt64) {
-    self.upper = upper
-    self.lower = lower
+    self.rawValue = (UInt128(upper) << 64) | UInt128(lower)
   }
 
   /// Creates a ULID from a 26-character Crockford Base32 string.
@@ -116,15 +111,14 @@ public struct ULID: Hashable, Sendable {
       value = value &* 32 &+ UInt128(digit)
     }
 
-    self.upper = UInt64(value >> 64)
-    self.lower = UInt64(truncatingIfNeeded: value)
+    self.rawValue = value
   }
 
   // MARK: - Properties
 
   /// The 48-bit timestamp component (milliseconds since Unix epoch).
   public var timestamp: UInt64 {
-    upper >> 16
+    UInt64(rawValue >> 80)
   }
 
   /// The date represented by this ULID's timestamp.
@@ -134,12 +128,10 @@ public struct ULID: Hashable, Sendable {
 
   /// The canonical 26-character Crockford Base32 string representation.
   public var ulidString: String {
-    let value = (UInt128(upper) << 64) | UInt128(lower)
-
     // Each character is 5 bits. 26 chars * 5 bits = 130 bits, but the top 2
     // bits are always 0 for valid ULIDs.
     return String(unsafeUninitializedCapacity: 26) { buffer in
-      var remaining = value
+      var remaining = rawValue
       for i in stride(from: 25, through: 0, by: -1) {
         buffer.initializeElement(at: i, to: Self.encodingAlphabet[Int(remaining & 0x1F)])
         remaining >>= 5
@@ -153,8 +145,8 @@ public struct ULID: Hashable, Sendable {
   /// The 128-bit ULID value is directly mapped to a UUID's 128-bit
   /// representation in network byte order.
   public var uuid: UUID {
-    let upperBE = upper.bigEndian
-    let lowerBE = lower.bigEndian
+    let upperBE = UInt64(rawValue >> 64).bigEndian
+    let lowerBE = UInt64(truncatingIfNeeded: rawValue).bigEndian
     return withUnsafeBytes(of: upperBE) { hi in
       withUnsafeBytes(of: lowerBE) { lo in
         UUID(uuid: (
@@ -170,7 +162,7 @@ public struct ULID: Hashable, Sendable {
 
 extension ULID: Comparable {
   public static func < (lhs: ULID, rhs: ULID) -> Bool {
-    (lhs.upper, lhs.lower) < (rhs.upper, rhs.lower)
+    lhs.rawValue < rhs.rawValue
   }
 }
 

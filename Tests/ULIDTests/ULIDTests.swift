@@ -124,12 +124,12 @@ struct ULIDTests {
 
   @Test("UUID conversion")
   func uuidConversion() {
-    let ulid = ULID()
-    let uuid = ulid.uuid
+    let ulid = ULID(
+      upper: 0x0123_4567_89AB_CDEF,
+      lower: 0xFEDC_BA98_7654_3210
+    )
 
-    // UUID should have correct structure
-    let uuidString = uuid.uuidString
-    #expect(uuidString.count == 36) // Standard UUID format with hyphens
+    #expect(ulid.uuid.uuidString == "01234567-89AB-CDEF-FEDC-BA9876543210")
   }
 
   @Test("Timestamp extraction")
