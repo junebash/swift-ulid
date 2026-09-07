@@ -66,11 +66,12 @@ public struct ULID: Hashable, Sendable {
 
     let randomHi = rng.next()
     let randomLo = rng.next()
-
-    self.rawValue =
-      (UInt128(timestamp) << 80)
+    self.init(
+      rawValue: (UInt128(timestamp) << 80)
       | (UInt128(randomHi & 0xFFFF) << 64)
       | UInt128(randomLo)
+    )
+
   }
 
   /// Creates a ULID with the specified date and system random number generator.
@@ -87,7 +88,20 @@ public struct ULID: Hashable, Sendable {
   ///   - upper: The upper 64 bits (timestamp + first 16 bits of randomness).
   ///   - lower: The lower 64 bits (remaining randomness).
   public init(upper: UInt64, lower: UInt64) {
-    self.rawValue = (UInt128(upper) << 64) | UInt128(lower)
+    self.init(rawValue: (UInt128(upper) << 64) | UInt128(lower))
+  }
+
+  public init(rawValue: UInt128) {
+    self.rawValue = rawValue
+  }
+
+  @available(iOS 26, tvOS 26, watchOS 26, macOS 26, *)
+  public init(bytes: [16 of UInt8]) {
+    var rawValue = 0 as UInt128
+    for index in bytes.indices {
+      rawValue = (rawValue << 8) | UInt128(bytes[index])
+    }
+    self.init(rawValue: rawValue)
   }
 
   /// Creates a ULID from a 26-character Crockford Base32 string.
@@ -111,7 +125,7 @@ public struct ULID: Hashable, Sendable {
       value = value &* 32 &+ UInt128(digit)
     }
 
-    self.rawValue = value
+    self.init(rawValue: value)
   }
 
   // MARK: - Properties

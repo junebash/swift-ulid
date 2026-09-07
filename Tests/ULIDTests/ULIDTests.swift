@@ -309,6 +309,19 @@ struct ULIDTests {
     #expect(ulid == ulid2)
   }
 
+  @available(macOS 26, *)
+  @Test("Inline array byte initialization")
+  func inlineArrayByteInitialization() {
+    let bytes: [16 of UInt8] = [
+      0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+      0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
+    ]
+
+    let ulid = ULID(bytes: bytes)
+
+    #expect(ulid.uuid.uuidString == "01234567-89AB-CDEF-FEDC-BA9876543210")
+  }
+
   @Test("All zeros")
   func allZeros() {
     let ulid = ULID(upper: 0, lower: 0)
