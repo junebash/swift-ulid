@@ -95,7 +95,7 @@ public struct ULID: Hashable, Sendable {
     self.rawValue = rawValue
   }
 
-  @available(iOS 26, tvOS 26, watchOS 26, macOS 26, *)
+  @available(iOS 26, tvOS 26, watchOS 26, macOS 26, visionOS 26, *)
   public init(bytes: [16 of UInt8]) {
     var rawValue = 0 as UInt128
     for index in bytes.indices {
@@ -167,6 +167,15 @@ public struct ULID: Hashable, Sendable {
           hi[0], hi[1], hi[2], hi[3], hi[4], hi[5], hi[6], hi[7],
           lo[0], lo[1], lo[2], lo[3], lo[4], lo[5], lo[6], lo[7]
         ))
+      }
+    }
+  }
+
+  @available(iOS 26, tvOS 26, watchOS 26, macOS 26, visionOS 26, *)
+  public var bytes: InlineArray<16, UInt8> {
+    withUnsafeBytes(of: rawValue.bigEndian) { buffer in
+      InlineArray { index in
+        buffer[index]
       }
     }
   }

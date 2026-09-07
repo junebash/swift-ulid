@@ -322,6 +322,34 @@ struct ULIDTests {
     #expect(ulid.uuid.uuidString == "01234567-89AB-CDEF-FEDC-BA9876543210")
   }
 
+  @available(macOS 26, *)
+  @Test("Inline array bytes use network byte order")
+  func inlineArrayBytesUseNetworkByteOrder() {
+    let expected: [16 of UInt8] = [
+      0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+      0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
+    ]
+    let ulid = ULID(
+      upper: 0x0123_4567_89AB_CDEF,
+      lower: 0xFEDC_BA98_7654_3210
+    )
+
+    for index in expected.indices {
+      #expect(ulid.bytes[index] == expected[index])
+    }
+  }
+
+  @available(macOS 26, *)
+  @Test("Inline array bytes round-trip")
+  func inlineArrayBytesRoundTrip() {
+    let ulid = ULID(
+      upper: 0x0123_4567_89AB_CDEF,
+      lower: 0xFEDC_BA98_7654_3210
+    )
+
+    #expect(ULID(bytes: ulid.bytes) == ulid)
+  }
+
   @Test("All zeros")
   func allZeros() {
     let ulid = ULID(upper: 0, lower: 0)
