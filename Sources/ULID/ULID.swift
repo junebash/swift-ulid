@@ -53,7 +53,7 @@ public struct ULID: Hashable, Sendable {
   /// - Parameters:
   ///   - date: The timestamp to use for this ULID.
   ///   - rng: A random number generator to use for the random component.
-  public init(date: Date, rng: inout some RandomNumberGenerator) {
+  public init(date: Date = .now, rng: inout some RandomNumberGenerator) {
     let timeInterval = date.timeIntervalSince1970 * 1000
     let timestamp: UInt64
     if timeInterval <= 0 {
