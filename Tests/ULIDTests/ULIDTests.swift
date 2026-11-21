@@ -333,7 +333,7 @@ struct ULIDTests {
     )
 
     for index in expected.indices {
-      #expect(ulid.bytes[index] == expected[index])
+      #expect(ulid.storage[index] == expected[index])
     }
   }
 
@@ -344,11 +344,11 @@ struct ULIDTests {
       lower: 0xFEDC_BA98_7654_3210
     )
 
-    #expect(ULID(bytes: ulid.bytes) == ulid)
+    #expect(ULID(bytes: ulid.storage) == ulid)
   }
 
-  @Test("Byte span uses network byte order")
-  func byteSpanUsesNetworkByteOrder() {
+  @Test("Bytes span uses network byte order")
+  func bytesSpanUsesNetworkByteOrder() {
     let expected: [UInt8] = [
       0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
       0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
@@ -358,7 +358,7 @@ struct ULIDTests {
       lower: 0xFEDC_BA98_7654_3210
     )
 
-    let span = ulid.byteSpan
+    let span = ulid.bytes
     #expect(span.byteCount == 16)
     let actual = span.byteOffsets.map { span.unsafeLoad(fromByteOffset: $0, as: UInt8.self) }
     #expect(actual == expected)
@@ -367,7 +367,7 @@ struct ULIDTests {
   @Test("Hash and equality follow the value")
   func hashAndEqualityFollowTheValue() {
     let a = ULID(upper: 1, lower: 2)
-    let b = ULID(bytes: a.bytes)
+    let b = ULID(bytes: a.storage)
     let c = ULID(upper: 1, lower: 3)
 
     #expect(a == b)

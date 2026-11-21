@@ -14,7 +14,7 @@ import Foundation
 /// - 80-bit cryptographically secure random component
 public struct ULID: Hashable, Sendable {
   /// Kept in network byte order so `byteSpan` can borrow it directly.
-  private let storage: [16 of UInt8]
+  public let storage: [16 of UInt8]
 
   private var rawValue: UInt128 {
     unsafeBitCast(storage, to: UInt128.self).bigEndian
@@ -162,13 +162,8 @@ public struct ULID: Hashable, Sendable {
     UUID(uuid: unsafeBitCast(storage, to: uuid_t.self))
   }
 
-  /// The 16 bytes of this ULID in network byte order.
-  public var bytes: [16 of UInt8] {
-    storage
-  }
-
   /// The 16 bytes of this ULID in network byte order, without copying.
-  public var byteSpan: RawSpan {
+  public var bytes: RawSpan {
     @_lifetime(borrow self)
     borrowing get {
       storage.span.bytes
