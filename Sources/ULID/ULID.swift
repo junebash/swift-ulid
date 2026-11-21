@@ -13,7 +13,7 @@ import Foundation
 /// - 48-bit timestamp (milliseconds since Unix epoch)
 /// - 80-bit cryptographically secure random component
 public struct ULID: Hashable, Sendable {
-  /// Kept in network byte order so `byteSpan` can borrow it directly.
+  /// Kept in network byte order so `bytes` can borrow it directly.
   public let storage: [16 of UInt8]
 
   private var rawValue: UInt128 {
@@ -172,12 +172,17 @@ public struct ULID: Hashable, Sendable {
 // MARK: - Equatable & Hashable
 
 extension ULID {
+  // Byte order doesn't matter for these, so skip the swap `rawValue` does.
+  private var storageBits: UInt128 {
+    unsafeBitCast(storage, to: UInt128.self)
+  }
+
   public static func == (lhs: ULID, rhs: ULID) -> Bool {
-    lhs.rawValue == rhs.rawValue
+    lhs.storageBits == rhs.storageBits
   }
 
   public func hash(into hasher: inout Hasher) {
-    hasher.combine(rawValue)
+    hasher.combine(storageBits)
   }
 }
 
