@@ -29,15 +29,17 @@ public struct ULID: Hashable, Sendable {
   public static let maxDate = Date(timeIntervalSince1970: TimeInterval(maxTimestamp) * 0.001)
 
   /// Crockford's Base32 alphabet (excludes I, L, O, U to avoid confusion)
-  private static let encodingAlphabet: [UInt8] = Array(
-    "0123456789ABCDEFGHJKMNPQRSTVWXYZ".utf8
-  )
+  /// A literal rather than an array: constant data, so no lazy setup or bounds checks.
+  private static var encodingAlphabet: StaticString {
+    "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+  }
 
   /// Decoding table: maps ASCII byte value to Base32 digit value.
   /// Invalid entries are 0xFF.
   private static let decodingTable: [UInt8] = {
     var table = [UInt8](repeating: 0xFF, count: 128)
-    for (index, byte) in encodingAlphabet.enumerated() {
+    let alphabet = encodingAlphabet.withUTF8Buffer { Array($0) }
+    for (index, byte) in alphabet.enumerated() {
       table[Int(byte)] = UInt8(index)
       // Also support lowercase
       if byte >= UInt8(ascii: "A"), byte <= UInt8(ascii: "Z") {
@@ -139,10 +141,11 @@ public struct ULID: Hashable, Sendable {
   public var ulidString: String {
     // Each character is 5 bits. 26 chars * 5 bits = 130 bits, but the top 2
     // bits are always 0 for valid ULIDs.
+    let alphabet = Self.encodingAlphabet.utf8Start
     return String(unsafeUninitializedCapacity: 26) { buffer in
       var remaining = rawValue
       for i in stride(from: 25, through: 0, by: -1) {
-        buffer.initializeElement(at: i, to: Self.encodingAlphabet[Int(remaining & 0x1F)])
+        buffer.initializeElement(at: i, to: alphabet[Int(remaining & 0x1F)])
         remaining >>= 5
       }
       return 26
