@@ -13,7 +13,12 @@ import Foundation
 /// - 48-bit timestamp (milliseconds since Unix epoch)
 /// - 80-bit cryptographically secure random component
 public struct ULID: Hashable, Sendable {
-  private let rawValue: UInt128
+  /// Kept in network byte order so `byteSpan` can borrow it directly.
+  private let storage: [16 of UInt8]
+
+  private var rawValue: UInt128 {
+    unsafeBitCast(storage, to: UInt128.self).bigEndian
+  }
 
   // MARK: - Constants
 
@@ -71,7 +76,6 @@ public struct ULID: Hashable, Sendable {
       | (UInt128(randomHi & 0xFFFF) << 64)
       | UInt128(randomLo)
     )
-
   }
 
   /// Creates a ULID with the specified date and system random number generator.
@@ -92,16 +96,12 @@ public struct ULID: Hashable, Sendable {
   }
 
   public init(rawValue: UInt128) {
-    self.rawValue = rawValue
+    self.storage = unsafeBitCast(rawValue.bigEndian, to: [16 of UInt8].self)
   }
 
-  @available(iOS 26, tvOS 26, watchOS 26, macOS 26, visionOS 26, *)
+  /// Creates a ULID from its 16 bytes in network byte order.
   public init(bytes: [16 of UInt8]) {
-    var rawValue = 0 as UInt128
-    for index in bytes.indices {
-      rawValue = (rawValue << 8) | UInt128(bytes[index])
-    }
-    self.init(rawValue: rawValue)
+    self.storage = bytes
   }
 
   /// Creates a ULID from a 26-character Crockford Base32 string.
@@ -159,25 +159,32 @@ public struct ULID: Hashable, Sendable {
   /// The 128-bit ULID value is directly mapped to a UUID's 128-bit
   /// representation in network byte order.
   public var uuid: UUID {
-    let upperBE = UInt64(rawValue >> 64).bigEndian
-    let lowerBE = UInt64(truncatingIfNeeded: rawValue).bigEndian
-    return withUnsafeBytes(of: upperBE) { hi in
-      withUnsafeBytes(of: lowerBE) { lo in
-        UUID(uuid: (
-          hi[0], hi[1], hi[2], hi[3], hi[4], hi[5], hi[6], hi[7],
-          lo[0], lo[1], lo[2], lo[3], lo[4], lo[5], lo[6], lo[7]
-        ))
-      }
-    }
+    UUID(uuid: unsafeBitCast(storage, to: uuid_t.self))
   }
 
-  @available(iOS 26, tvOS 26, watchOS 26, macOS 26, visionOS 26, *)
-  public var bytes: InlineArray<16, UInt8> {
-    withUnsafeBytes(of: rawValue.bigEndian) { buffer in
-      InlineArray { index in
-        buffer[index]
-      }
+  /// The 16 bytes of this ULID in network byte order.
+  public var bytes: [16 of UInt8] {
+    storage
+  }
+
+  /// The 16 bytes of this ULID in network byte order, without copying.
+  public var byteSpan: RawSpan {
+    @_lifetime(borrow self)
+    borrowing get {
+      storage.span.bytes
     }
+  }
+}
+
+// MARK: - Equatable & Hashable
+
+extension ULID {
+  public static func == (lhs: ULID, rhs: ULID) -> Bool {
+    lhs.rawValue == rhs.rawValue
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(rawValue)
   }
 }
 

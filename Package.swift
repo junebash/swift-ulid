@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
   name: "swift-ulid",
-  platforms: [.macOS(.v15), .iOS(.v18), .tvOS(.v18), .watchOS(.v11), .visionOS(.v2)],
+  platforms: [.macOS(.v26), .iOS(.v26), .tvOS(.v26), .watchOS(.v26), .visionOS(.v26)],
   products: [
     .library(
       name: "ULID",
@@ -17,7 +17,10 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "ULID"
+      name: "ULID",
+      swiftSettings: [
+        .enableExperimentalFeature("Lifetimes"),
+      ]
     ),
     .testTarget(
       name: "ULIDTests",
