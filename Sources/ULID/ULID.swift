@@ -28,10 +28,6 @@ public struct ULID: Hashable, Sendable {
 
   public static let maxDate = Date(timeIntervalSince1970: TimeInterval(maxTimestamp) * 0.001)
 
-  /// Maximum valid 128-bit ULID value (7ZZZZZZZZZZZZZZZZZZZZZZZZZ)
-  private static let maxValue: UInt128 =
-    (UInt128(maxTimestamp) << 80) | ((1 << 80) - 1)
-
   /// Crockford's Base32 alphabet (excludes I, L, O, U to avoid confusion)
   private static let encodingAlphabet: [UInt8] = Array(
     "0123456789ABCDEFGHJKMNPQRSTVWXYZ".utf8
@@ -112,18 +108,17 @@ public struct ULID: Hashable, Sendable {
     guard string.utf8.count == 26 else { return nil }
 
     var value: UInt128 = 0
+    var invalidBits: UInt8 = 0
 
     for byte in string.utf8 {
-      guard byte < 128 else { return nil }
-      let digit = Self.decodingTable[Int(byte)]
-      guard digit != 0xFF else { return nil }
-
-      // Overflow check: value * 32 + digit must not exceed maxValue
-      let maxAllowed = (Self.maxValue &- UInt128(digit)) / 32
-      guard value <= maxAllowed else { return nil }
-
-      value = value &* 32 &+ UInt128(digit)
+      let digit = Self.decodingTable[Int(byte & 0x7F)]
+      invalidBits |= (byte | digit) & 0x80
+      value = value &<< 5 | UInt128(digit & 0x1F)
     }
+
+    // 26 digits hold 130 bits, so only the first digit can overflow 128.
+    let firstDigit = Self.decodingTable[Int(string.utf8.first.unsafelyUnwrapped & 0x7F)]
+    guard invalidBits == 0, firstDigit <= 7 else { return nil }
 
     self.init(rawValue: value)
   }
