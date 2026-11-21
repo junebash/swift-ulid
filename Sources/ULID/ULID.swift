@@ -16,7 +16,7 @@ public struct ULID: Hashable, Sendable {
   /// Kept in network byte order so `bytes` can borrow it directly.
   public let storage: [16 of UInt8]
 
-  private var value: UInt128 {
+  private var integerValue: UInt128 {
     unsafeBitCast(storage, to: UInt128.self).bigEndian
   }
 
@@ -70,7 +70,7 @@ public struct ULID: Hashable, Sendable {
     let randomHi = rng.next()
     let randomLo = rng.next()
     self.init(
-      rawValue: (UInt128(timestamp) << 80)
+      integerValue: (UInt128(timestamp) << 80)
       | (UInt128(randomHi & 0xFFFF) << 64)
       | UInt128(randomLo)
     )
@@ -90,11 +90,12 @@ public struct ULID: Hashable, Sendable {
   ///   - upper: The upper 64 bits (timestamp + first 16 bits of randomness).
   ///   - lower: The lower 64 bits (remaining randomness).
   public init(upper: UInt64, lower: UInt64) {
-    self.init(rawValue: (UInt128(upper) << 64) | UInt128(lower))
+    self.init(integerValue: (UInt128(upper) << 64) | UInt128(lower))
   }
 
-  public init(rawValue: UInt128) {
-    self.storage = unsafeBitCast(rawValue.bigEndian, to: [16 of UInt8].self)
+  /// Creates a ULID from its 128-bit value, with the timestamp in the top 48 bits.
+  public init(integerValue: UInt128) {
+    self.storage = unsafeBitCast(integerValue.bigEndian, to: [16 of UInt8].self)
   }
 
   /// Creates a ULID from its 16 bytes in network byte order.
@@ -122,14 +123,14 @@ public struct ULID: Hashable, Sendable {
     let firstDigit = Self.decodingTable[Int(string.utf8.first.unsafelyUnwrapped & 0x7F)]
     guard invalidBits == 0, firstDigit <= 7 else { return nil }
 
-    self.init(rawValue: value)
+    self.init(integerValue: value)
   }
 
   // MARK: - Properties
 
   /// The 48-bit timestamp component (milliseconds since Unix epoch).
   public var timestamp: UInt64 {
-    UInt64(value >> 80)
+    UInt64(integerValue >> 80)
   }
 
   /// The date represented by this ULID's timestamp.
@@ -143,7 +144,7 @@ public struct ULID: Hashable, Sendable {
     // bits are always 0 for valid ULIDs.
     let alphabet = Self.encodingAlphabet.utf8Start
     return String(unsafeUninitializedCapacity: 26) { buffer in
-      var remaining = value
+      var remaining = integerValue
       for i in stride(from: 25, through: 0, by: -1) {
         buffer.initializeElement(at: i, to: alphabet[Int(remaining & 0x1F)])
         remaining >>= 5
@@ -172,7 +173,7 @@ public struct ULID: Hashable, Sendable {
 // MARK: - Equatable & Hashable
 
 extension ULID {
-  // Byte order doesn't matter for these, so skip the swap `value` does.
+  // Byte order doesn't matter for these, so skip the swap `integerValue` does.
   private var storageBits: UInt128 {
     unsafeBitCast(storage, to: UInt128.self)
   }
@@ -190,7 +191,7 @@ extension ULID {
 
 extension ULID: Comparable {
   public static func < (lhs: ULID, rhs: ULID) -> Bool {
-    lhs.value < rhs.value
+    lhs.integerValue < rhs.integerValue
   }
 }
 
