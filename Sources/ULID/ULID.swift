@@ -16,7 +16,7 @@ public struct ULID: Hashable, Sendable {
   /// Kept in network byte order so `bytes` can borrow it directly.
   public let storage: [16 of UInt8]
 
-  private var rawValue: UInt128 {
+  private var value: UInt128 {
     unsafeBitCast(storage, to: UInt128.self).bigEndian
   }
 
@@ -129,7 +129,7 @@ public struct ULID: Hashable, Sendable {
 
   /// The 48-bit timestamp component (milliseconds since Unix epoch).
   public var timestamp: UInt64 {
-    UInt64(rawValue >> 80)
+    UInt64(value >> 80)
   }
 
   /// The date represented by this ULID's timestamp.
@@ -143,7 +143,7 @@ public struct ULID: Hashable, Sendable {
     // bits are always 0 for valid ULIDs.
     let alphabet = Self.encodingAlphabet.utf8Start
     return String(unsafeUninitializedCapacity: 26) { buffer in
-      var remaining = rawValue
+      var remaining = value
       for i in stride(from: 25, through: 0, by: -1) {
         buffer.initializeElement(at: i, to: alphabet[Int(remaining & 0x1F)])
         remaining >>= 5
@@ -172,7 +172,7 @@ public struct ULID: Hashable, Sendable {
 // MARK: - Equatable & Hashable
 
 extension ULID {
-  // Byte order doesn't matter for these, so skip the swap `rawValue` does.
+  // Byte order doesn't matter for these, so skip the swap `value` does.
   private var storageBits: UInt128 {
     unsafeBitCast(storage, to: UInt128.self)
   }
@@ -190,7 +190,7 @@ extension ULID {
 
 extension ULID: Comparable {
   public static func < (lhs: ULID, rhs: ULID) -> Bool {
-    lhs.rawValue < rhs.rawValue
+    lhs.value < rhs.value
   }
 }
 
