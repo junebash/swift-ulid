@@ -109,7 +109,7 @@ public struct ULID: Hashable, Sendable {
   /// Returns `nil` if the string is not exactly 26 characters, contains
   /// invalid characters, or decodes to a value exceeding the maximum ULID.
   public init?(_ string: String) {
-    guard string.count == 26 else { return nil }
+    guard string.utf8.count == 26 else { return nil }
 
     var value: UInt128 = 0
 

@@ -73,7 +73,11 @@ struct ULIDTests {
       "01AN4Z07BY79KA1307SR9X4MVL",
       "01AN4Z07BY79KA1307SR9X4MVO",
       "01AN4Z07BY79KA1307SR9X4MVU",
-      "01AN4Z07BY79KA1307SR9X4MV!"
+      "01AN4Z07BY79KA1307SR9X4MV!",
+      // 26 UTF-8 bytes but 25 characters. "ð" is C3 B0, which reads as
+      // "C0" if the high bit is ignored.
+      "01AN4Z07BY79KA1307SR9X4Mð",
+      "01AN4Z07BY79KA1307SR9X4MVð",
     ]
   )
   func invalidCharacters(str: String) {
